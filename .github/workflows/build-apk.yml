@@ -1,0 +1,52 @@
+name: Build AilemYanimda APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Projeyi al
+        uses: actions/checkout@v4
+
+      - name: Java 17 kur
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Android SDK hazirla
+        uses: android-actions/setup-android@v3
+
+      - name: Android 35 kur
+        run: |
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Gradle kur
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Projeyi ZIP dosyasindan cikar
+        run: |
+          mkdir -p buildsrc
+          unzip -q AilemYanimda_v0.2_github_ready.zip -d buildsrc
+
+      - name: AndroidX uyumlulugunu duzelt
+        run: |
+          sed -i "s/androidx.core:core:1.17.0/androidx.core:core:1.15.0/" buildsrc/AilemYanimda/app/build.gradle
+
+      - name: APK derle
+        working-directory: buildsrc/AilemYanimda
+        run: gradle --no-daemon assembleDebug
+
+      - name: APK dosyasini kaydet
+        uses: actions/upload-artifact@v4
+        with:
+          name: AilemYanimda-APK
+          path: buildsrc/AilemYanimda/app/build/outputs/apk/debug/app-debug.apk
